@@ -243,7 +243,7 @@ $languages_list = $pdo->query("SELECT id, name FROM programming_languages ORDER 
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔐 Админ-панель</h1>
+            <h1> Админ-панель</h1>
             <div class="stat-card">
                 <div class="number"><?= $total_users ?></div>
                 <div class="label">Всего анкет</div>
@@ -259,7 +259,7 @@ $languages_list = $pdo->query("SELECT id, name FROM programming_languages ORDER 
         
         <!-- Статистика -->
         <div class="section">
-            <h2>📊 Статистика по языкам</h2>
+            <h2> Статистика по языкам</h2>
             <div class="stats-grid">
                 <?php foreach ($languages_stats as $stat): ?>
                     <div class="stat-item">
@@ -273,7 +273,7 @@ $languages_list = $pdo->query("SELECT id, name FROM programming_languages ORDER 
         <!-- Редактирование -->
         <?php if ($edit_id && $edit_data): ?>
             <div class="section">
-                <h2>✏️ Редактирование #<?= $edit_id ?></h2>
+                <h2> Редактирование #<?= $edit_id ?></h2>
                 <form method="POST" class="edit-form">
                     <input type="hidden" name="edit_id" value="<?= $edit_id ?>">
                     
@@ -351,8 +351,8 @@ $languages_list = $pdo->query("SELECT id, name FROM programming_languages ORDER 
                     </div>
                     
                     <div class="form-buttons">
-                        <button type="submit" class="btn btn-save">💾 Сохранить</button>
-                        <a href="admin.php" class="btn btn-cancel">❌ Отмена</a>
+                        <button type="submit" class="btn btn-save"> Сохранить</button>
+                        <a href="admin.php" class="btn btn-cancel"> Отмена</a>
                     </div>
                 </form>
             </div>
@@ -360,7 +360,7 @@ $languages_list = $pdo->query("SELECT id, name FROM programming_languages ORDER 
         
         <!-- Таблица пользователей -->
         <div class="section">
-            <h2>📋 Список анкет</h2>
+            <h2> Список анкет</h2>
             <div class="table-container">
                 <table>
                     <thead>
