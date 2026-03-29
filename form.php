@@ -170,7 +170,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📝 Анкета программиста</h1>
+            <h1>Анкета</h1>
             <p><?= isset($_SESSION['user_id']) ? 'Редактирование анкеты' : 'Заполните форму' ?></p>
             <div class="auth-section">
                 <?php if (!isset($_SESSION['user_id'])): ?>
@@ -196,7 +196,7 @@
             
             <?php if (isset($_SESSION['new_credentials'])): ?>
                 <div class="credentials-message">
-                    <h3>🎉 Ваши данные для входа</h3>
+                    <h3> Ваши данные для входа</h3>
                     <div class="credentials-box">
                         <div class="credential-item">
                             <strong>Логин</strong>
@@ -207,7 +207,7 @@
                             <div class="credential-value"><?= $_SESSION['new_credentials']['password'] ?></div>
                         </div>
                     </div>
-                    <p>⚠️ Сохраните их! Показываются только один раз.</p>
+                    <p> Сохраните их! Показываются только один раз.</p>
                 </div>
                 <?php unset($_SESSION['new_credentials']); ?>
             <?php endif; ?>
