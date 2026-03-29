@@ -1,125 +1,135 @@
 <?php
+// index.php - Главный обработчик формы
+
 session_start();
-require_once 'config.php';
+require_once 'functions.php';
 
-// Функции простые
-function validate($data) {
-    $errors = [];
-    if (empty($data['name'])) $errors[] = 'Имя обязательно';
-    if (empty($data['email']) || !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) $errors[] = 'Email некорректен';
-    if (strlen($data['message']) < 10) $errors[] = 'Сообщение минимум 10 символов';
-    return $errors;
-}
-
-$errors = [];
-$success = false;
-$credentials = null;
-
-// Обработка формы
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $formData = [
-        'name' => trim($_POST['name'] ?? ''),
-        'email' => trim($_POST['email'] ?? ''),
-        'message' => trim($_POST['message'] ?? ''),
-        'language' => $_POST['language'] ?? ''
-    ];
+// Если GET запрос - показываем форму
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    unset($_SESSION['form_data']);
+    unset($_SESSION['errors']);
+    unset($_SESSION['success_message']);
     
-    $errors = validate($formData);
+    // Загружаем данные для формы
+    $saved_data = loadFromCookies();
     
-    if (empty($errors)) {
-        // Сохраняем
-        $stmt = $pdo->prepare("INSERT INTO form_data (name, email, message, language) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$formData['name'], $formData['email'], $formData['message'], $formData['language']]);
+    // Если пользователь авторизован - загружаем его данные из БД
+    if (isset($_SESSION['user_id'])) {
+        $pdo = getDB();
+        $stmt = $pdo->prepare("SELECT * FROM applications WHERE id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $user_data = $stmt->fetch();
         
-        // Генерируем логин/пароль при первой отправке
-        if (!isset($_COOKIE['form_sent'])) {
-            setcookie('form_sent', '1', time() + 86400 * 30);
-            $login = 'user_' . rand(10000, 99999);
-            $password = substr(md5(rand()), 0, 8);
-            $hash = password_hash($password, PASSWORD_DEFAULT);
-            
-            $stmt = $pdo->prepare("INSERT INTO users (login, password_hash) VALUES (?, ?)");
-            $stmt->execute([$login, $hash]);
-            
-            $credentials = ['login' => $login, 'password' => $password];
+        if ($user_data) {
+            $stmt = $pdo->prepare("SELECT language_id FROM application_languages WHERE application_id = ?");
+            $stmt->execute([$_SESSION['user_id']]);
+            $langs = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            if ($langs) {
+                $user_data['languages'] = $langs;
+            }
+            $saved_data = $user_data;
         }
-        $success = true;
     }
+    
+    $errors = [];
+    $old_data = [];
+    include 'form.php';
+    exit;
 }
 
-// Восстанавливаем данные из кук
-$cookieToken = $_COOKIE['form_token'] ?? '';
-$savedData = ['name' => '', 'email' => '', 'message' => '', 'language' => ''];
-if ($cookieToken) {
-    $stmt = $pdo->prepare("SELECT name, email, message, language FROM form_data WHERE id = ?");
-    $stmt->execute([$cookieToken]);
-    $savedData = $stmt->fetch() ?: $savedData;
+// POST запрос - обрабатываем данные
+$_SESSION['form_data'] = $_POST;
+
+// Валидация
+$errors = validateFormData($_POST);
+
+if (!empty($errors)) {
+    setcookie('form_errors', json_encode($errors), 0, '/');
+    setcookie('old_data', json_encode($_POST), 0, '/');
+    header('Location: index.php');
+    exit;
+}
+
+// Сохранение в БД
+try {
+    $pdo = getDB();
+    $pdo->beginTransaction();
+    
+    if (isset($_SESSION['user_id'])) {
+        // Редактирование существующей записи
+        $stmt = $pdo->prepare("
+            UPDATE applications 
+            SET full_name = ?, phone = ?, email = ?, birth_date = ?, 
+                gender = ?, biography = ?, contract_accepted = ?
+            WHERE id = ?
+        ");
+        
+        $stmt->execute([
+            $_POST['full_name'],
+            $_POST['phone'],
+            $_POST['email'],
+            $_POST['birth_date'],
+            $_POST['gender'],
+            $_POST['biography'],
+            isset($_POST['contract_accepted']) ? 1 : 0,
+            $_SESSION['user_id']
+        ]);
+        
+        // Удаляем старые языки
+        $stmt = $pdo->prepare("DELETE FROM application_languages WHERE application_id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        
+        $application_id = $_SESSION['user_id'];
+        
+    } else {
+        // Новая запись - генерируем логин/пароль
+        $credentials = generateCredentials();
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO applications 
+            (full_name, phone, email, birth_date, gender, biography, contract_accepted, login, password_hash) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        
+        $stmt->execute([
+            $_POST['full_name'],
+            $_POST['phone'],
+            $_POST['email'],
+            $_POST['birth_date'],
+            $_POST['gender'],
+            $_POST['biography'],
+            isset($_POST['contract_accepted']) ? 1 : 0,
+            $credentials['login'],
+            password_hash($credentials['password'], PASSWORD_DEFAULT)
+        ]);
+        
+        $application_id = $pdo->lastInsertId();
+        
+        $_SESSION['new_credentials'] = $credentials;
+    }
+    
+    // Вставляем языки
+    $stmt = $pdo->prepare("INSERT INTO application_languages (application_id, language_id) VALUES (?, ?)");
+    foreach ($_POST['languages'] as $lang_id) {
+        $stmt->execute([$application_id, $lang_id]);
+    }
+    
+    $pdo->commit();
+    
+    // Сохраняем в Cookies для неавторизованных
+    if (!isset($_SESSION['user_id'])) {
+        saveToCookies($_POST);
+    }
+    
+    $_SESSION['success_message'] = "Анкета успешно сохранена!";
+    header('Location: index.php?save=1');
+    exit;
+    
+} catch (Exception $e) {
+    $pdo->rollBack();
+    setcookie('form_errors', json_encode(['db' => $e->getMessage()]), 0, '/');
+    setcookie('old_data', json_encode($_POST), 0, '/');
+    header('Location: index.php');
+    exit;
 }
 ?>
-
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Форма обратной связи</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Форма обратной связи</h1>
-        
-        <?php if ($success && $credentials): ?>
-            <div class="success">
-                <h3>Данные сохранены!</h3>
-                <p>Ваши данные для входа:</p>
-                <p><strong>Логин:</strong> <?php echo $credentials['login']; ?></p>
-                <p><strong>Пароль:</strong> <?php echo $credentials['password']; ?></p>
-                <p class="warning">Сохраните их! Они показываются только один раз.</p>
-            </div>
-        <?php elseif ($success): ?>
-            <div class="success">Данные успешно сохранены!</div>
-        <?php endif; ?>
-        
-        <?php if (!empty($errors)): ?>
-            <div class="error">
-                <?php foreach ($errors as $error): ?>
-                    <p><?php echo $error; ?></p>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-        
-        <form method="POST">
-            <div class="form-group">
-                <label>Имя:</label>
-                <input type="text" name="name" value="<?php echo htmlspecialchars($_POST['name'] ?? $savedData['name'] ?? ''); ?>" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Email:</label>
-                <input type="email" name="email" value="<?php echo htmlspecialchars($_POST['email'] ?? $savedData['email'] ?? ''); ?>" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Любимый язык программирования:</label>
-                <select name="language">
-                    <option value="">Выберите</option>
-                    <option <?php echo (($_POST['language'] ?? $savedData['language'] ?? '') == 'PHP') ? 'selected' : ''; ?>>PHP</option>
-                    <option <?php echo (($_POST['language'] ?? $savedData['language'] ?? '') == 'Python') ? 'selected' : ''; ?>>Python</option>
-                    <option <?php echo (($_POST['language'] ?? $savedData['language'] ?? '') == 'JavaScript') ? 'selected' : ''; ?>>JavaScript</option>
-                    <option <?php echo (($_POST['language'] ?? $savedData['language'] ?? '') == 'Java') ? 'selected' : ''; ?>>Java</option>
-                    <option <?php echo (($_POST['language'] ?? $savedData['language'] ?? '') == 'C++') ? 'selected' : ''; ?>>C++</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label>Сообщение:</label>
-                <textarea name="message" rows="5" required><?php echo htmlspecialchars($_POST['message'] ?? $savedData['message'] ?? ''); ?></textarea>
-            </div>
-            
-            <button type="submit">Отправить</button>
-        </form>
-        
-        <p><a href="admin.php">Админ-панель</a></p>
-    </div>
-</body>
-</html>
