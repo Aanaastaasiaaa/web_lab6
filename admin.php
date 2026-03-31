@@ -1,5 +1,5 @@
 <?php
-// admin.php - Админ-панель с HTTP-авторизацией
+// admin.php - Админ-панель
 
 require_once 'functions.php';
 
@@ -136,114 +136,267 @@ $languages_list = $pdo->query("SELECT id, name FROM programming_languages ORDER 
     <meta charset="UTF-8">
     <title>Админ-панель</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1e1e2e;
-            color: #cdd6f4;
+            background: #f0f2f5;
             padding: 20px;
         }
-        .container { max-width: 1400px; margin: 0 auto; }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
         .header {
-            background: #313244;
-            padding: 20px 30px;
-            border-radius: 12px;
+            background: white;
+            padding: 20px 25px;
+            border-radius: 8px;
             margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 15px;
         }
-        .header h1 { color: #f9e2af; }
+        
+        .header h1 {
+            font-size: 1.5em;
+            color: #333;
+            font-weight: 500;
+        }
+        
         .stat-card {
-            background: #45475a;
-            padding: 10px 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .stat-card .number { font-size: 1.5em; font-weight: bold; color: #89b4fa; }
-        .section {
-            background: #313244;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-        .section h2 {
-            color: #f9e2af;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #45475a;
-            padding-bottom: 10px;
-        }
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #45475a; }
-        th { background: #45475a; color: #89b4fa; }
-        tr:hover { background: #45475a; }
-        .actions { display: flex; gap: 10px; flex-wrap: wrap; }
-        .btn {
-            padding: 6px 12px;
-            border: none;
+            background: #e8f0fe;
+            padding: 8px 16px;
             border-radius: 6px;
+        }
+        
+        .stat-card .number {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #1a73e8;
+        }
+        
+        .stat-card .label {
+            font-size: 0.8em;
+            color: #5f6368;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: 500;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        
+        th, td {
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        th {
+            background: #f8f9fa;
+            color: #5f6368;
+            font-weight: 500;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 4px;
             cursor: pointer;
             text-decoration: none;
+            font-size: 0.85em;
             display: inline-block;
         }
-        .btn-edit { background: #f9e2af; color: #1e1e2e; }
-        .btn-delete { background: #f38ba8; color: #1e1e2e; }
-        .btn-save { background: #a6e3a1; color: #1e1e2e; }
-        .btn-cancel { background: #6c7086; color: #cdd6f4; }
+        
+        .btn-edit {
+            background: #e8f0fe;
+            color: #1a73e8;
+        }
+        
+        .btn-edit:hover {
+            background: #d2e3fc;
+        }
+        
+        .btn-delete {
+            background: #fee7e7;
+            color: #d93025;
+        }
+        
+        .btn-delete:hover {
+            background: #fdd;
+        }
+        
+        .btn-save {
+            background: #1a73e8;
+            color: white;
+        }
+        
+        .btn-save:hover {
+            background: #1557b0;
+        }
+        
+        .btn-cancel {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .btn-cancel:hover {
+            background: #d0d0d0;
+        }
+        
         .message {
-            padding: 15px;
-            border-radius: 8px;
+            padding: 12px 15px;
+            border-radius: 6px;
             margin-bottom: 20px;
         }
-        .message-success { background: #a6e3a1; color: #1e1e2e; }
-        .message-error { background: #f38ba8; color: #1e1e2e; }
+        
+        .message-success {
+            background: #e6f4ea;
+            color: #137333;
+            border: 1px solid #ceead6;
+        }
+        
+        .message-error {
+            background: #fce8e6;
+            color: #c5221f;
+            border: 1px solid #f9d9d8;
+        }
+        
         .edit-form {
-            background: #45475a;
+            background: #f8f9fa;
             padding: 20px;
             border-radius: 8px;
             margin-top: 15px;
         }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
-        .form-group input, .form-group textarea, .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #6c7086;
-            border-radius: 6px;
-            background: #1e1e2e;
-            color: #cdd6f4;
+        
+        .form-group {
+            margin-bottom: 15px;
         }
-        .form-group select[multiple] { height: 100px; }
-        .form-group .error { color: #f38ba8; font-size: 0.85em; margin-top: 5px; }
-        .form-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+            font-size: 0.9em;
+        }
+        
+        .form-group input, 
+        .form-group textarea, 
+        .form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-family: inherit;
+        }
+        
+        .form-group select[multiple] {
+            height: 100px;
+        }
+        
+        .form-group .error {
+            color: #d93025;
+            font-size: 0.8em;
+            margin-top: 3px;
+        }
+        
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
         .stats-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 10px;
         }
+        
         .stat-item {
-            background: #45475a;
-            padding: 15px 20px;
-            border-radius: 8px;
-            flex: 1;
-            min-width: 100px;
+            background: #f8f9fa;
+            padding: 8px 15px;
+            border-radius: 6px;
+            min-width: 80px;
             text-align: center;
         }
-        .stat-item .lang-name { font-weight: bold; margin-bottom: 8px; color: #f9e2af; }
-        .stat-item .lang-count { font-size: 1.5em; font-weight: bold; color: #89b4fa; }
+        
+        .stat-item .lang-name {
+            font-weight: 500;
+            font-size: 0.85em;
+            color: #5f6368;
+        }
+        
+        .stat-item .lang-count {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #1a73e8;
+        }
+        
         @media (max-width: 768px) {
-            th, td { font-size: 0.85em; padding: 8px; }
-            .actions { flex-direction: column; }
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+            th, td {
+                font-size: 0.8em;
+                padding: 6px;
+            }
+            .actions {
+                flex-direction: column;
+                gap: 4px;
+            }
+            .stats-grid {
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1> Админ-панель</h1>
+            <h1>Админ-панель</h1>
             <div class="stat-card">
                 <div class="number"><?= $total_users ?></div>
                 <div class="label">Всего анкет</div>
@@ -251,15 +404,15 @@ $languages_list = $pdo->query("SELECT id, name FROM programming_languages ORDER 
         </div>
         
         <?php if (isset($success)): ?>
-            <div class="message message-success">✅ <?= $success ?></div>
+            <div class="message message-success"><?= $success ?></div>
         <?php endif; ?>
         <?php if (isset($error)): ?>
-            <div class="message message-error">❌ <?= $error ?></div>
+            <div class="message message-error"><?= $error ?></div>
         <?php endif; ?>
         
-        <!-- Статистика -->
+        <!-- Статистика по языкам -->
         <div class="section">
-            <h2> Статистика по языкам</h2>
+            <h2>Статистика по языкам</h2>
             <div class="stats-grid">
                 <?php foreach ($languages_stats as $stat): ?>
                     <div class="stat-item">
@@ -273,7 +426,7 @@ $languages_list = $pdo->query("SELECT id, name FROM programming_languages ORDER 
         <!-- Редактирование -->
         <?php if ($edit_id && $edit_data): ?>
             <div class="section">
-                <h2> Редактирование #<?= $edit_id ?></h2>
+                <h2>Редактирование записи #<?= $edit_id ?></h2>
                 <form method="POST" class="edit-form">
                     <input type="hidden" name="edit_id" value="<?= $edit_id ?>">
                     
@@ -321,7 +474,7 @@ $languages_list = $pdo->query("SELECT id, name FROM programming_languages ORDER 
                     </div>
                     
                     <div class="form-group">
-                        <label>Языки *</label>
+                        <label>Языки программирования *</label>
                         <select name="languages[]" multiple required>
                             <?php foreach ($languages_list as $lang): ?>
                                 <?php $selected = in_array($lang['id'], $edit_data['languages'] ?? []); ?>
@@ -330,6 +483,7 @@ $languages_list = $pdo->query("SELECT id, name FROM programming_languages ORDER 
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                        <div class="hint">Держите Ctrl для выбора нескольких</div>
                         <?php if (isset($edit_errors['languages'])): ?>
                             <div class="error"><?= $edit_errors['languages'] ?></div>
                         <?php endif; ?>
@@ -351,8 +505,8 @@ $languages_list = $pdo->query("SELECT id, name FROM programming_languages ORDER 
                     </div>
                     
                     <div class="form-buttons">
-                        <button type="submit" class="btn btn-save"> Сохранить</button>
-                        <a href="admin.php" class="btn btn-cancel"> Отмена</a>
+                        <button type="submit" class="btn btn-save">Сохранить</button>
+                        <a href="admin.php" class="btn btn-cancel">Отмена</a>
                     </div>
                 </form>
             </div>
@@ -360,11 +514,22 @@ $languages_list = $pdo->query("SELECT id, name FROM programming_languages ORDER 
         
         <!-- Таблица пользователей -->
         <div class="section">
-            <h2> Список анкет</h2>
+            <h2>Список анкет</h2>
             <div class="table-container">
                 <table>
                     <thead>
-                        <tr><th>ID</th><th>ФИО</th><th>Телефон</th><th>Email</th><th>Дата</th><th>Пол</th><th>Языки</th><th>Биография</th><th>Контракт</th><th>Действия</th></tr>
+                        <tr>
+                            <th>ID</th>
+                            <th>ФИО</th>
+                            <th>Телефон</th>
+                            <th>Email</th>
+                            <th>Дата</th>
+                            <th>Пол</th>
+                            <th>Языки</th>
+                            <th>Биография</th>
+                            <th>Контракт</th>
+                            <th>Действия</th>
+                        </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($applications as $app): ?>
@@ -375,12 +540,12 @@ $languages_list = $pdo->query("SELECT id, name FROM programming_languages ORDER 
                                 <td><?= htmlspecialchars($app['email']) ?></td>
                                 <td><?= $app['birth_date'] ?></td>
                                 <td><?= $app['gender'] == 'male' ? 'М' : 'Ж' ?></td>
-                                <td><?= htmlspecialchars(substr($app['languages'] ?? '', 0, 30)) ?></td>
+                                <td><?= htmlspecialchars(substr($app['languages'] ?? '', 0, 40)) ?></td>
                                 <td><?= htmlspecialchars(substr($app['biography'] ?? '', 0, 40)) ?>...</td>
-                                <td><?= $app['contract_accepted'] ? '✅' : '❌' ?></td>
+                                <td><?= $app['contract_accepted'] ? 'Да' : 'Нет' ?></td>
                                 <td class="actions">
-                                    <a href="?edit=<?= $app['id'] ?>" class="btn btn-edit">✏️</a>
-                                    <a href="?delete=<?= $app['id'] ?>" class="btn btn-delete" onclick="return confirm('Удалить?')">🗑️</a>
+                                    <a href="?edit=<?= $app['id'] ?>" class="btn btn-edit">Изменить</a>
+                                    <a href="?delete=<?= $app['id'] ?>" class="btn btn-delete" onclick="return confirm('Удалить запись?')">Удалить</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
